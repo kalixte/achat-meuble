@@ -68,13 +68,16 @@ console.log("Type du nom :", typeof nom);
             });
         }
         const categories = ["Salon", "Chambre", "Cuisine", "Bureau"];
-
-if (!categories.includes(req.body.categorie)) {
+        
+// Vérification de la catégorie
+if (
+    typeof categorie !== "string" ||
+    !categories.includes(categorie.trim().toLowerCase())
+) {
     return res.status(400).json({
         message: "Catégorie de meuble invalide."
     });
 }
-
         // 3. Préparation du meuble
         const collection = client.db('achat-meuble').collection('meubles');
 
