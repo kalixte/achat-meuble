@@ -42,18 +42,13 @@ app.get('/meubles', async (req, res) => {
 
 // Enregistrer un meuble
 app.post('/meubles', async (req, res) => {
-    try {
-        const collection = client.db('achat-meuble').collection('meubles');
-        const nouveauMeuble = {
-    ...req.body,
-    actif: true
-};
+
 const { nom, prixJournalier } = req.body;
 if (typeof nom !== "string" || nom.trim() === "") {
     return res.status(400).json({
         message: "Le nom du meuble est obligatoire."
     });
-}if (
+}if ( 
     typeof prixJournalier !== "number" ||
     !Number.isFinite(prixJournalier) ||
     prixJournalier < 0
@@ -62,6 +57,13 @@ if (typeof nom !== "string" || nom.trim() === "") {
         message: "Le prix journalier doit être un nombre positif ou égal à zéro."
     });
 }
+    try {
+        const collection = client.db('achat-meuble').collection('meubles');
+        const nouveauMeuble = {
+    ...req.body,
+    actif: true
+};
+
 
         const resultat = await collection.insertOne(nouveauMeuble);
 
