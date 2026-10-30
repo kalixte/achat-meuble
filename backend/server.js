@@ -48,6 +48,21 @@ app.post('/meubles', async (req, res) => {
     ...req.body,
     actif: true
 };
+const { nom, prixJournalier } = req.body;
+if (typeof nom !== "string" || nom.trim() === "") {
+    return res.status(400).json({
+        message: "Le nom du meuble est obligatoire."
+    });
+}if (
+    typeof prixJournalier !== "number" ||
+    !Number.isFinite(prixJournalier) ||
+    prixJournalier < 0
+) {
+    return res.status(400).json({
+        message: "Le prix journalier doit être un nombre positif ou égal à zéro."
+    });
+}
+
         const resultat = await collection.insertOne(nouveauMeuble);
 
         res.status(201).json({
