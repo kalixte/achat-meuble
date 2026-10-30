@@ -1,0 +1,13 @@
+
+# Dépendances Node.js
+node_modules/
+
+# Variables d'environnement et secrets
+.env
+.env.*
+
+# Exceptions : modèles sans secrets
+!.env.example
+
+# Journaux
+*.log
