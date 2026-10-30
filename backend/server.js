@@ -43,7 +43,7 @@ app.get('/meubles', async (req, res) => {
 // Enregistrer un meuble
 
 app.post('/meubles', async (req, res) => {
-    const { nom, prixJournalier } = req.body;
+    const { nom, prixJournalier, categorie } = req.body;
     // Log des données reçues pour le débogage a suprrimer après le débogage
     console.log("Données reçues :", req.body);
 console.log("Nom reçu :", nom);
@@ -67,12 +67,11 @@ console.log("Type du nom :", typeof nom);
                 message: "Le prix journalier doit être un nombre positif ou égal à zéro."
             });
         }
-        const categories = ["Salon", "Chambre", "Cuisine", "Bureau"];
+        const categories = ["salon", "chambre", "cuisine", "bureau"];
         
 // Vérification de la catégorie
 if (
-    typeof categorie !== "string" ||
-    !categories.includes(categorie.trim().toLowerCase())
+    typeof categorie !== "string" || !categories.includes(categorie.trim().toLowerCase())
 ) {
     return res.status(400).json({
         message: "Catégorie de meuble invalide."
@@ -82,8 +81,9 @@ if (
         const collection = client.db('achat-meuble').collection('meubles');
 
         const nouveauMeuble = {
-            ...req.body,
             nom: nom.trim(),
+            PrixJournalier: prixJournalier,
+            categorie: categorie.trim().toLowerCase(),
             actif: true
         };
 
@@ -135,7 +135,34 @@ app.get('/meubles/:id', async (req, res) => {
         });
     }
 });
+//route pour rehercher un meuble par son nom
+app.get('/meubles/recherche', async (req, res) => {
+    try {
+        const nomRecherche = req.query.nom;
 
+        if (!nomRecherche || nomRecherche.trim() === '') {
+            return res.status(400).json({
+                message: "Veuillez saisir un nom de meuble"
+            });
+        }
+
+        const meubles = await collection.find({
+            nom: {
+                $regex: nomRecherche,
+                $options: "i"
+            },
+            actif: true
+        }).toArray();
+
+        res.status(200).json(meubles);
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+});
 // Modifier le prix journalier d'un meuble
 app.patch('/meubles/:id', async (req, res) => {
     try {
@@ -251,7 +278,8 @@ app.patch('/meubles/:id/activer', async (req, res) => {
         });
     }
 });
-
+// route pour supprimer
+app.delete('/meubles/:id',async (req, res) => {});
 
 // Démarrer le serveur après la connexion à MongoDB
 async function demarrerServeur() {
