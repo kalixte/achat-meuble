@@ -82,7 +82,7 @@ if (
 
         const nouveauMeuble = {
             nom: nom.trim(),
-            PrixJournalier: prixJournalier,
+            prixJournalier: prixJournalier,
             categorie: categorie.trim().toLowerCase(),
             actif: true
         };
@@ -104,7 +104,36 @@ if (
         });
     }
 });
+//route pour rehercher un meuble par son nom
+app.get('/meubles/recherche', async (req, res) => {
+    try {
+        const collection = client.db('achat-meuble').collection('meubles');
+        const nomRecherche = req.query.nom;
 
+
+        if (!nomRecherche || nomRecherche.trim() === '') {
+            return res.status(400).json({
+                message: "Veuillez saisir un nom de meuble"
+            });
+        }
+
+        const meubles = await collection.find({
+            nom: {
+                $regex: nomRecherche,
+                $options: "i"
+            },
+            actif: true
+        }).toArray();
+
+        res.status(200).json(meubles);
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+});
 // Récupérer un meuble par son identifiant
 app.get('/meubles/:id', async (req, res) => {
     try {
@@ -135,34 +164,7 @@ app.get('/meubles/:id', async (req, res) => {
         });
     }
 });
-//route pour rehercher un meuble par son nom
-app.get('/meubles/recherche', async (req, res) => {
-    try {
-        const nomRecherche = req.query.nom;
 
-        if (!nomRecherche || nomRecherche.trim() === '') {
-            return res.status(400).json({
-                message: "Veuillez saisir un nom de meuble"
-            });
-        }
-
-        const meubles = await collection.find({
-            nom: {
-                $regex: nomRecherche,
-                $options: "i"
-            },
-            actif: true
-        }).toArray();
-
-        res.status(200).json(meubles);
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Erreur serveur",
-            error: error.message
-        });
-    }
-});
 // Modifier le prix journalier d'un meuble
 app.patch('/meubles/:id', async (req, res) => {
     try {
