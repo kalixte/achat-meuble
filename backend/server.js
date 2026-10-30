@@ -41,38 +41,61 @@ app.get('/meubles', async (req, res) => {
 });
 
 // Enregistrer un meuble
-app.post('/meubles', async (req, res) => {
 
-const { nom, prixJournalier } = req.body;
-if (typeof nom !== "string" || nom.trim() === "") {
+app.post('/meubles', async (req, res) => {
+    const { nom, prixJournalier } = req.body;
+    // Log des données reçues pour le débogage a suprrimer après le débogage
+    console.log("Données reçues :", req.body);
+console.log("Nom reçu :", nom);
+console.log("Type du nom :", typeof nom);
+
+    try {
+        // 1. Vérification du nom
+        if (typeof nom !== "string" || nom.trim() === "") {
+            return res.status(400).json({
+                message: "Le nom du meuble est obligatoire."
+            });
+        }
+
+        // 2. Vérification du prix
+        if (
+            typeof prixJournalier !== "number" ||
+            !Number.isFinite(prixJournalier) ||
+            prixJournalier < 0
+        ) {
+            return res.status(400).json({
+                message: "Le prix journalier doit être un nombre positif ou égal à zéro."
+            });
+        }
+        const categories = ["Salon", "Chambre", "Cuisine", "Bureau"];
+
+if (!categories.includes(req.body.categorie)) {
     return res.status(400).json({
-        message: "Le nom du meuble est obligatoire."
-    });
-}if ( 
-    typeof prixJournalier !== "number" ||
-    !Number.isFinite(prixJournalier) ||
-    prixJournalier < 0
-) {
-    return res.status(400).json({
-        message: "Le prix journalier doit être un nombre positif ou égal à zéro."
+        message: "Catégorie de meuble invalide."
     });
 }
-    try {
+
+        // 3. Préparation du meuble
         const collection = client.db('achat-meuble').collection('meubles');
+
         const nouveauMeuble = {
-    ...req.body,
-    actif: true
-};
+            ...req.body,
+            nom: nom.trim(),
+            actif: true
+        };
 
-
+        // 4. Enregistrement dans MongoDB
         const resultat = await collection.insertOne(nouveauMeuble);
 
+        // 5. Réponse au client
         res.status(201).json({
             message: 'Meuble enregistré avec succès !',
             id: resultat.insertedId
         });
+
     } catch (error) {
         console.error('Erreur :', error.message);
+
         res.status(500).json({
             message: 'Erreur lors de l’enregistrement du meuble.'
         });
