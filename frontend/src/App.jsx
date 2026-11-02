@@ -1,11 +1,11 @@
 
-import Sidebar from "./components/Sidebar";
-import Dashboard from "./pages/Dashboard";
+import sidebar from "./components/sidebar";
+import Dashboard from "./Pages/Dashboard";
 
 function App() {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <sidebar />
       <Dashboard />
     </div>
   );
