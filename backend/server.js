@@ -28,10 +28,29 @@ app.get('/test-db', async (req, res) => {
 // Récupérer la liste des meubles
 app.get('/meubles', async (req, res) => {
     try {
-        const collection = client.db('achat-meuble').collection('meubles');
-        const listeMeubles = await collection.find({ actif: true }).toArray();
+        const filtre = { actif: true };
 
-        res.json(listeMeubles);
+const { categorie, prixMax } = req.query;
+
+if (categorie) {
+    filtre.categorie = categorie.trim().toLowerCase();
+}
+
+if (prixMax !== undefined) {
+    const prix = Number(prixMax);
+
+    if (!Number.isFinite(prix) || prix < 0) {
+        return res.status(400).json({
+            message: "Le prix maximal doit être un nombre positif ou nul."
+        });
+    }
+
+    filtre.prixJournalier = { $lte: prix };
+}
+
+const meubles = await collection.find(filtre).toArray();
+
+return res.status(200).json(meubles);
     } catch (error) {
         console.error('Erreur :', error.message);
         res.status(500).json({
@@ -281,7 +300,45 @@ app.patch('/meubles/:id/activer', async (req, res) => {
     }
 });
 // route pour supprimer
-app.delete('/meubles/:id',async (req, res) => {});
+app.delete('/meubles/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. Vérifier le format de l'identifiant
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Identifiant invalide."
+            });
+        }
+
+        // 2. Récupérer la collection
+        const collection = client.db('achat-meuble').collection('meubles');
+
+        // 3. Supprimer le meuble
+        const resultat = await collection.deleteOne({
+            _id: new ObjectId(id)
+        });
+            
+        // 4. Vérifier si un meuble a été supprimé
+        if (resultat.deletedCount === 0) {
+            return res.status(404).json({
+                message: "Aucun meuble trouvé avec cet identifiant."
+            });
+        }
+
+        // 5. Confirmer la suppression
+        return res.status(200).json({
+            message: "Meuble supprimé avec succès."
+        });
+
+    } catch (erreur) {
+        console.error(erreur);
+
+        return res.status(500).json({
+            message: "Erreur interne du serveur."
+        });
+    }
+});
 
 // Démarrer le serveur après la connexion à MongoDB
 async function demarrerServeur() {
