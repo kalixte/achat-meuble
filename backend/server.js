@@ -407,7 +407,102 @@ app.get('/clients', async (req, res) => {
         });
     }
 });
+// Enregistrer une location
+app.post('/locations', async (req, res) => {
+    try {
+        const { clientId, meubleId, dateDebut, dateFin } = req.body;
 
+        // 1. Vérifier les identifiants
+        if (!ObjectId.isValid(clientId) || !ObjectId.isValid(meubleId)) {
+            return res.status(400).json({
+                message: "Identifiant du client ou du meuble invalide."
+            });
+        }
+
+        // 2. Vérifier les dates
+        if (!dateDebut || !dateFin) {
+            return res.status(400).json({
+                message: "Les dates de début et de fin sont obligatoires."
+            });
+        }
+
+        const debut = new Date(dateDebut);
+        const fin = new Date(dateFin);
+
+        if (
+            Number.isNaN(debut.getTime()) ||
+            Number.isNaN(fin.getTime()) ||
+            debut.toISOString().slice(0, 10) !== dateDebut ||
+            fin.toISOString().slice(0, 10) !== dateFin ||
+            debut >= fin
+        ) {
+            return res.status(400).json({
+                message: "Les dates sont invalides ou la date de fin doit être postérieure à la date de début."
+            });
+        }
+
+        const db = client.db('achat-meuble');
+
+        // 3. Vérifier que le client existe et est actif
+        const clientTrouve = await db.collection('clients').findOne({
+            _id: new ObjectId(clientId),
+            actif: true
+        });
+
+        if (!clientTrouve) {
+            return res.status(404).json({
+                message: "Client introuvable ou inactif."
+            });
+        }
+
+        // 4. Vérifier que le meuble existe et est actif
+        const meuble = await db.collection('meubles').findOne({
+            _id: new ObjectId(meubleId),
+            actif: true
+        });
+
+        if (!meuble) {
+            return res.status(404).json({
+                message: "Meuble introuvable ou inactif."
+            });
+        }
+
+        // 5. Calculer le montant de la location
+        const nombreJours = (fin - debut) / (1000 * 60 * 60 * 24);
+        const montantTotal = nombreJours * meuble.prixJournalier;
+
+        // 6. Préparer la location
+        const nouvelleLocation = {
+            clientId: new ObjectId(clientId),
+            meubleId: new ObjectId(meubleId),
+            dateDebut,
+            dateFin,
+            nombreJours,
+            prixJournalier: meuble.prixJournalier,
+            montantTotal,
+            statut: "en cours",
+            dateCreation: new Date()
+        };
+
+        // 7. Enregistrer dans MongoDB
+        const resultat = await db.collection('locations').insertOne(
+            nouvelleLocation
+        );
+
+        return res.status(201).json({
+            message: "Location enregistrée avec succès !",
+            id: resultat.insertedId,
+            location: nouvelleLocation
+        });
+
+    } catch (erreur) {
+        console.error("Erreur lors de la création de la location :", erreur);
+
+        return res.status(500).json({
+            message: "Erreur lors de l'enregistrement de la location."
+        });
+    }
+});
 // Démarrer le serveur après la connexion à MongoDB
 async function demarrerServeur() {
     try {
