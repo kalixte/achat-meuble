@@ -466,6 +466,19 @@ app.post('/locations', async (req, res) => {
                 message: "Meuble introuvable ou inactif."
             });
         }
+        // Vérifier la disponibilité du meuble
+const locationExistante = await db.collection('locations').findOne({
+    meubleId: new ObjectId(meubleId),
+    statut: "en cours",
+    dateDebut: { $lt: dateFin },
+    dateFin: { $gt: dateDebut }
+});
+
+if (locationExistante) {
+    return res.status(409).json({
+        message: "Ce meuble est déjà loué pendant cette période."
+    });
+}
 
         // 5. Calculer le montant de la location
         const nombreJours = (fin - debut) / (1000 * 60 * 60 * 24);
@@ -500,6 +513,23 @@ app.post('/locations', async (req, res) => {
 
         return res.status(500).json({
             message: "Erreur lors de l'enregistrement de la location."
+        });
+    }
+});
+// Afficher toutes les locations
+app.get('/locations', async (req, res) => {
+    try {
+        const collection = client.db('achat-meuble').collection('locations');
+
+        const locations = await collection.find({}).toArray();
+
+        return res.status(200).json(locations);
+
+    } catch (erreur) {
+        console.error("Erreur lors de la récupération des locations :", erreur);
+
+        return res.status(500).json({
+            message: "Erreur lors de la récupération des locations."
         });
     }
 });
