@@ -28,6 +28,7 @@ app.get('/test-db', async (req, res) => {
 // Récupérer la liste des meubles
 app.get('/meubles', async (req, res) => {
     try {
+        const collection = client.db('achat-meuble').collection('meubles');
         const filtre = { actif: true };
 
 const { categorie, prixMax } = req.query;
@@ -336,6 +337,56 @@ app.delete('/meubles/:id', async (req, res) => {
 
         return res.status(500).json({
             message: "Erreur interne du serveur."
+        });
+    }
+});
+// Enregistrer un client
+app.post('/clients', async (req, res) => {
+    try {
+        const { nom, prenom, telephone } = req.body;
+
+        // Vérifier le nom
+        if (typeof nom !== "string" || nom.trim() === "") {
+            return res.status(400).json({
+                message: "Le nom du client est obligatoire."
+            });
+        }
+
+        // Vérifier le prénom
+        if (typeof prenom !== "string" || prenom.trim() === "") {
+            return res.status(400).json({
+                message: "Le prénom du client est obligatoire."
+            });
+        }
+
+        // Vérifier le téléphone
+        if (typeof telephone !== "string" || telephone.trim() === "") {
+            return res.status(400).json({
+                message: "Le numéro de téléphone est obligatoire."
+            });
+        }
+
+        const collection = client.db('achat-meuble').collection('clients');
+
+        const nouveauClient = {
+            nom: nom.trim(),
+            prenom: prenom.trim(),
+            telephone: telephone.trim(),
+            actif: true
+        };
+
+        const resultat = await collection.insertOne(nouveauClient);
+
+        return res.status(201).json({
+            message: "Client enregistré avec succès !",
+            id: resultat.insertedId
+        });
+
+    } catch (erreur) {
+        console.error("Erreur :", erreur.message);
+
+        return res.status(500).json({
+            message: "Erreur lors de l'enregistrement du client."
         });
     }
 });
