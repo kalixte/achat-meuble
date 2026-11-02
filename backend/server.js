@@ -390,6 +390,23 @@ app.post('/clients', async (req, res) => {
         });
     }
 });
+// Récupérer la liste des clients
+app.get('/clients', async (req, res) => {
+    try {
+        const collection = client.db('achat-meuble').collection('clients');
+
+        const clients = await collection.find({ actif: true }).toArray();
+
+        return res.status(200).json(clients);
+
+    } catch (erreur) {
+        console.error("Erreur :", erreur.message);
+
+        return res.status(500).json({
+            message: "Erreur lors de la récupération des clients."
+        });
+    }
+});
 
 // Démarrer le serveur après la connexion à MongoDB
 async function demarrerServeur() {
