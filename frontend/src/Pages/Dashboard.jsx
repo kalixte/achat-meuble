@@ -6,7 +6,7 @@ import {
   ClipboardList,
   Wallet
 } from "lucide-react";
-
+ 
 const Dashboard = () => {
   const [meubles, setMeubles] = useState([]);
   const [clients, setClients] = useState([]);

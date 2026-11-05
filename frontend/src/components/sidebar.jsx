@@ -1,46 +1,65 @@
-
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Armchair,
   Users,
   ClipboardList,
-  Settings
+  Settings,
+  LogOut,
 } from "lucide-react";
 
-const Sidebar = () => {
-  const menu = [
-    { name: "Tableau de bord", icon: LayoutDashboard },
-    { name: "Meubles", icon: Armchair },
-    { name: "Clients", icon: Users },
-    { name: "Locations", icon: ClipboardList },
-    { name: "Paramètres", icon: Settings },
-  ];
+const menus = [
+  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { label: "Meubles", path: "/meubles", icon: Armchair },
+  { label: "Clients", path: "/clients", icon: Users },
+  { label: "Locations", path: "/locations", icon: ClipboardList },
+  { label: "Paramètres", path: "/settings", icon: Settings },
+];
+
+function Sidebar() {
+  const navigate = useNavigate();
+
+  function deconnexion() {
+    localStorage.removeItem("token");
+    navigate("/login");
+  }
 
   return (
-    <aside className="w-64 min-h-screen bg-[#172554] text-white p-5">
-      <h1 className="text-2xl font-bold mb-2">
-        BureauMeuble
-      </h1>
-      <p className="text-blue-200 text-xs mb-10">
-        GESTION DE LOCATION
-      </p>
+    <aside className="w-64 min-h-screen bg-slate-900 text-white p-5 flex flex-col">
+      <h1 className="text-2xl font-bold mb-10">BureauMeuble</h1>
 
-      <ul className="menu gap-2 p-0">
-        {menu.map((item) => {
-          const Icon = item.icon;
+      <nav className="flex-1 space-y-2">
+        {menus.map((menu) => {
+          const Icon = menu.icon;
 
           return (
-            <li key={item.name}>
-              <a className="text-white hover:bg-blue-800">
-                <Icon size={20} />
-                {item.name}
-              </a>
-            </li>
+            <NavLink
+              key={menu.path}
+              to={menu.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 p-3 rounded-lg transition ${
+                  isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`
+              }
+            >
+              <Icon size={20} />
+              {menu.label}
+            </NavLink>
           );
         })}
-      </ul>
+      </nav>
+
+      <button
+        onClick={deconnexion}
+        className="flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800"
+      >
+        <LogOut size={20} />
+        Déconnexion
+      </button>
     </aside>
   );
-};
+}
 
 export default Sidebar;
