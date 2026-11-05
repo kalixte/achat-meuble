@@ -11,6 +11,47 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Vérifier que l'utilisateur est connecté
+function verifierToken(req, res, next) {
+  const authorization = req.headers.authorization;
+
+  // Vérifier la présence du token
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    return res.status(401).json({
+      message: "Accès refusé. Veuillez vous connecter."
+    });
+  }
+
+  const token = authorization.split(' ')[1];
+
+  try {
+    // Vérifier la validité du token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Vérifier le rôle administrateur
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({
+        message: "Accès réservé à l'administrateur."
+      });
+    }
+
+    req.admin = decoded;
+
+    next();
+
+  } catch (erreur) {
+    return res.status(401).json({
+      message: "Session invalide ou expirée. Veuillez vous reconnecter."
+    });
+  }
+}
+
+// Protéger les routes de l'application
+app.use('/meubles', verifierToken);
+app.use('/clients', verifierToken);
+app.use('/locations', verifierToken);
+
+
 const client = new MongoClient(process.env.MONGODB_URI);
 
 // Accueil
@@ -537,6 +578,72 @@ app.get('/locations', async (req, res) => {
         });
     }
 });
+
+// Connexion de l'administrateur
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Vérifier les informations reçues
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Veuillez renseigner l'adresse e-mail et le mot de passe."
+      });
+    }
+
+    // Rechercher l'administrateur
+    const admins = client.db('achat-meuble').collection('admins');
+
+    const admin = await admins.findOne({
+      email: email.trim().toLowerCase(),
+      actif: true
+    });
+
+    // Vérifier le mot de passe
+    if (!admin || !(await bcrypt.compare(password, admin.passwordHash))) {
+      return res.status(401).json({
+        message: "Identifiants incorrects."
+      });
+    }
+
+    // Vérifier la clé secrète JWT
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET est absent du fichier .env");
+    }
+
+    // Générer le jeton de connexion
+    const token = jwt.sign(
+      {
+        id: admin._id.toString(),
+        role: admin.role
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    return res.status(200).json({
+      message: "Connexion réussie !",
+      token,
+      admin: {
+        email: admin.email,
+        role: admin.role
+      }
+    });
+
+  } catch (erreur) {
+    console.error("Erreur de connexion :", erreur.message);
+
+    return res.status(500).json({
+      message: "Erreur lors de la connexion."
+    });
+  }
+});
+
 // Démarrer le serveur après la connexion à MongoDB
 async function demarrerServeur() {
     try {
